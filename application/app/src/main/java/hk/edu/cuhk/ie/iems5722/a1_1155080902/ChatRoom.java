@@ -133,9 +133,16 @@ public class ChatRoom extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        messageList.clear();
-        init_chatroom();
-        Log.d("swaggy", "refresh");
+        switch (item.getItemId()) {
+            case R.id.refresh:
+                messageList.clear();
+                init_chatroom();
+                Log.d("swaggy", "refresh");
+                break;
+            default:
+                Intent intent = new Intent(ChatRoom.this,MainActivity.class);
+                startActivity(intent);
+        }
         return true;
     }
     public void post_message(final String info){
