@@ -6,6 +6,7 @@ package hk.edu.cuhk.ie.iems5722.a1_1155080902;
 
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -74,7 +75,8 @@ public class ChatRoom extends AppCompatActivity {
                     ChatMessage chatMessage = new ChatMessage(info,currentDateandTime,name,ChatMessage.Sent);
                     messageList.add(chatMessage);
                     adapter.notifyDataSetChanged();
-                    post_message(info);
+                    //post_message(info);
+                    new BackgroundTask().execute("",info);
                     listview1.setSelection(messageList.size());
                     editText.setText("");
                 }
@@ -88,44 +90,27 @@ public class ChatRoom extends AppCompatActivity {
             }
 
             @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
+            {
                 if(total != totalItemCount)
                 {
                     total = totalItemCount;
                     position = totalItemCount - position;
                 }
-                if(firstVisibleItem == 0){
+                if(firstVisibleItem == 0)
+                {
                     View firstItem = listview1.getChildAt(0);
                     if(firstItem != null && firstItem.getTop() == 0){
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    int temp = page + 1;
-                                    if(temp <= Integer.parseInt(total_pages)) {
-                                        String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d",chatroom_id,++page);
-                                        OkHttpClient client = new OkHttpClient();
-                                        Request request = new Request.Builder().url(path).build();
-                                        Response response = client.newCall(request).execute();
-                                        String responseData = response.body().string();
-                                        parseJson(responseData);
-                                    }
-                                    else{
-                                    }
-
-
-
-
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }).start();
+                        int temp = page + 1;
+                        if(temp <= Integer.parseInt(total_pages)) {
+                            String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d", chatroom_id, ++page);
+                            new BackgroundTask().execute(path);
+                        }
                     }
                 }
             }
         });
-        }
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.chatroom_menu,menu);
@@ -137,7 +122,6 @@ public class ChatRoom extends AppCompatActivity {
             case R.id.refresh:
                 messageList.clear();
                 init_chatroom();
-                Log.d("swaggy", "refresh");
                 break;
             default:
                 Intent intent = new Intent(ChatRoom.this,MainActivity.class);
@@ -145,17 +129,34 @@ public class ChatRoom extends AppCompatActivity {
         }
         return true;
     }
-    public void post_message(final String info){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
+    public void init_chatroom() {
+        String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d",chatroom_id,page);
+        new BackgroundTask().execute(path);
+    }
+    class BackgroundTask extends AsyncTask<String,Integer,String> {
+        @Override
+        protected String doInBackground(String... params) {
+            if(!"".equals(params[0])){
+                try {
+                    String path = String.format(params[0]);
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder().url(path).build();
+                    Response response = null;
+                    response = client.newCall(request).execute();
+                    String responseData = response.body().string();
+                    return responseData;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else{
                 try {
                     OkHttpClient client = new OkHttpClient();
                     RequestBody requestBody = new FormBody.Builder()
                             .add("chatroom_id",chatroom_id)
                             .add("user_id",user_id)
                             .add("name",name)
-                            .add("message",info)
+                            .add("message",params[1])
                             .build();
                     Request request = new Request.Builder()
                             .url("http://iems5722.albertauyeung.com/api/asgn2/send_message")
@@ -168,67 +169,70 @@ public class ChatRoom extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-        }).start();
-    }
-    public void init_chatroom() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d",chatroom_id,page);
-                    OkHttpClient client = new OkHttpClient();
-                    Request request = new Request.Builder().url(path).build();
-                    Response response = client.newCall(request).execute();
-                    String responseData = response.body().string();
-                    parseJson(responseData);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-    }
-    public void parseJson(final String jsonString){
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    JSONObject json = new JSONObject(jsonString);
-                    String status = json.getString("status");
-                    adapter.notifyDataSetChanged();
-                    listview1 = (ListView) findViewById(R.id.listviiew1);
-                    listview1.setAdapter(adapter);
-                    if("OK".equals(status)){
-                        JSONArray chat_list = json.getJSONArray("data");
-                        total_pages = json.getString("total_pages");
-                        for (int i = 0; i < chat_list.length(); i++) {
-                            JSONObject Message = chat_list.getJSONObject(i);
-                            String content = Message.getString("message");
-                            String timestamp = Message.getString("timestamp");
-                            String name = Message.getString("name");
+            return null;
+        }
 
-                            if("Swaggy".equals(name)){
-                                ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Sent);
-                                messageList.add(0,history);
-                            }
-                            else{
-                                ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Receive);
-                                messageList.add(0,history);
-                            }
+
+        @Override
+        protected void onPostExecute(String jsonString) {
+            super.onPostExecute(jsonString);
+            try {
+                JSONObject json = new JSONObject(jsonString);
+                String status = json.getString("status");
+                adapter.notifyDataSetChanged();
+                listview1 = (ListView) findViewById(R.id.listviiew1);
+                listview1.setAdapter(adapter);
+                if("OK".equals(status)){
+                    JSONArray chat_list = json.getJSONArray("data");
+                    total_pages = json.getString("total_pages");
+                    for (int i = 0; i < chat_list.length(); i++) {
+                        JSONObject Message = chat_list.getJSONObject(i);
+                        String content = Message.getString("message");
+                        String timestamp = Message.getString("timestamp");
+                        String name = Message.getString("name");
+
+                        if("Swaggy".equals(name)){
+                            ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Sent);
+                            messageList.add(0,history);
                         }
-                        if(position != 0){
-                            listview1.setSelection(position);
+                        else{
+                            ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Receive);
+                            messageList.add(0,history);
                         }
                     }
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                    if(position != 0){
+                        listview1.setSelection(position);
+                    }
                 }
+
+
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        });
-
-
+        }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
