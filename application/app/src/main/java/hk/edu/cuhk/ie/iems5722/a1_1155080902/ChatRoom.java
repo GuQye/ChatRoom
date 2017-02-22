@@ -29,7 +29,6 @@ import java.util.Date;
 import java.util.List;
 
 import okhttp3.FormBody;
-import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -45,7 +44,8 @@ public class ChatRoom extends AppCompatActivity {
     private String chatroom_id;
     private String user_id = "1155080902";
     private int page = 1;
-    private int position;
+    private int position = 0;
+    private int total;
     private String total_pages;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,11 +72,7 @@ public class ChatRoom extends AppCompatActivity {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:SS");
                     String currentDateandTime = sdf.format(new Date());
                     ChatMessage chatMessage = new ChatMessage(info,currentDateandTime,name,ChatMessage.Sent);
-
-                    Log.d("sdsa", info);
-                    //ChatMessage reply = new ChatMessage("哦",currentDateandTime,ChatMessage.Receive);
                     messageList.add(chatMessage);
-                    //messageList.add(reply);
                     adapter.notifyDataSetChanged();
                     post_message(info);
                     listview1.setSelection(messageList.size());
@@ -93,7 +89,11 @@ public class ChatRoom extends AppCompatActivity {
 
             @Override
             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                position = listview1.getFirstVisiblePosition();
+                if(total != totalItemCount)
+                {
+                    total = totalItemCount;
+                    position = totalItemCount - position;
+                }
                 if(firstVisibleItem == 0){
                     View firstItem = listview1.getChildAt(0);
                     if(firstItem != null && firstItem.getTop() == 0){
@@ -103,9 +103,7 @@ public class ChatRoom extends AppCompatActivity {
                                 try {
                                     int temp = page + 1;
                                     if(temp <= Integer.parseInt(total_pages)) {
-                                        Log.d("path", total_pages);
                                         String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d",chatroom_id,++page);
-                                        Log.d("swaggy", path);
                                         OkHttpClient client = new OkHttpClient();
                                         Request request = new Request.Builder().url(path).build();
                                         Response response = client.newCall(request).execute();
@@ -128,20 +126,18 @@ public class ChatRoom extends AppCompatActivity {
             }
         });
         }
-
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.item,menu);
+        getMenuInflater().inflate(R.menu.chatroom_menu,menu);
         return true;
     }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Toast.makeText(ChatRoom.this,"refresh",Toast.LENGTH_SHORT).show();
+        messageList.clear();
+        init_chatroom();
+        Log.d("swaggy", "refresh");
         return true;
     }
-
     public void post_message(final String info){
         new Thread(new Runnable() {
             @Override
@@ -204,7 +200,7 @@ public class ChatRoom extends AppCompatActivity {
                             String timestamp = Message.getString("timestamp");
                             String name = Message.getString("name");
 
-                            if("SwaggyQ".equals(name)){
+                            if("Swaggy".equals(name)){
                                 ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Sent);
                                 messageList.add(0,history);
                             }
@@ -212,6 +208,9 @@ public class ChatRoom extends AppCompatActivity {
                                 ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Receive);
                                 messageList.add(0,history);
                             }
+                        }
+                        if(position != 0){
+                            listview1.setSelection(position);
                         }
                     }
 
