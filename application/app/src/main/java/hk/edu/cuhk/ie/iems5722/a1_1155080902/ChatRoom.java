@@ -15,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -52,6 +53,7 @@ public class ChatRoom extends AppCompatActivity {
     private String year = "";
     private String month = "";
     private String day = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,32 +64,40 @@ public class ChatRoom extends AppCompatActivity {
         setTitle(title);
         init_chatroom();
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        adapter = new MessageAdapter(ChatRoom.this,R.layout.listview,messageList);
+        adapter = new MessageAdapter(ChatRoom.this, R.layout.listview, messageList);
         adapter.notifyDataSetChanged();
         listview1 = (ListView) findViewById(R.id.listviiew1);
         listview1.setAdapter(adapter);
+        listview1.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                ChatMessage chatMessage_delete = messageList.get(position);
+                messageList.remove(position);
+                adapter.notifyDataSetChanged();
+                listview1.setAdapter(adapter);
 
+            }
+        });
         ImageButton send = (ImageButton) findViewById(R.id.button2);
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 EditText editText = (EditText) findViewById(R.id.editText1);
                 String info = editText.getText().toString();
-                if(!"".equals(info)){
+                if (!"".equals(info)) {
                     //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:SS");
                     //String currentDateandTime = sdf.format(new Date());
                     SimpleDateFormat sdf_post = new SimpleDateFormat("HH:mm");
                     String currentDateandTime_post = sdf_post.format(new Date());
-                    ChatMessage chatMessage = new ChatMessage(info,currentDateandTime_post,name,ChatMessage.Sent,"");
+                    ChatMessage chatMessage = new ChatMessage(info, currentDateandTime_post, name, ChatMessage.Sent, "");
                     messageList.add(chatMessage);
                     adapter.notifyDataSetChanged();
-                    new BackgroundTask().execute("",info);
+                    new BackgroundTask().execute("", info);
                     listview1.setSelection(messageList.size());
                     editText.setText("");
                 }
             }
         });
-
         listview1.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
@@ -95,30 +105,32 @@ public class ChatRoom extends AppCompatActivity {
             }
 
             @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
-            {
-                if(total != totalItemCount)
-                {
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (total != totalItemCount) {
                     total = totalItemCount;
                     position = totalItemCount - position;
                 }
-                if(firstVisibleItem == 0)
-                {
+                if (firstVisibleItem == 0) {
                     View firstItem = listview1.getChildAt(0);
-                    if(firstItem != null && firstItem.getTop() == 0){
+                    if (firstItem != null && firstItem.getTop() == 0) {
                         int temp = page + 1;
-                        if(temp <= Integer.parseInt(total_pages)) {
+                        if (temp <= Integer.parseInt(total_pages)) {
                             String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d", chatroom_id, ++page);
+                            Toast.makeText(getApplicationContext(), "正在加载下一页", Toast.LENGTH_SHORT).show();
                             new BackgroundTask().execute(path);
+
+                        } else {
+                            Toast.makeText(getApplicationContext(), "已经是最后一页", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
             }
         });
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.chatroom_menu,menu);
+        getMenuInflater().inflate(R.menu.chatroom_menu, menu);
         return true;
     }
     @Override
@@ -129,24 +141,19 @@ public class ChatRoom extends AppCompatActivity {
                 init_chatroom();
                 break;
             default:
-                Intent intent = new Intent(ChatRoom.this,MainActivity.class);
+                Intent intent = new Intent(ChatRoom.this, MainActivity.class);
                 startActivity(intent);
         }
         return true;
     }
     public void init_chatroom() {
-        String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d",chatroom_id,page);
+        String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d", chatroom_id, page);
         new BackgroundTask().execute(path);
     }
-
-
-
-
-
-    class BackgroundTask extends AsyncTask<String,Integer,String> {
+    class BackgroundTask extends AsyncTask<String, Integer, String> {
         @Override
         protected String doInBackground(String... params) {
-            if(!"".equals(params[0])){
+            if (!"".equals(params[0])) {
                 try {
                     String path = String.format(params[0]);
                     OkHttpClient client = new OkHttpClient();
@@ -158,15 +165,14 @@ public class ChatRoom extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-            else{
+            } else {
                 try {
                     OkHttpClient client = new OkHttpClient();
                     RequestBody requestBody = new FormBody.Builder()
-                            .add("chatroom_id",chatroom_id)
-                            .add("user_id",user_id)
-                            .add("name",name)
-                            .add("message",params[1])
+                            .add("chatroom_id", chatroom_id)
+                            .add("user_id", user_id)
+                            .add("name", name)
+                            .add("message", params[1])
                             .build();
                     Request request = new Request.Builder()
                             .url("http://iems5722.albertauyeung.com/api/asgn2/send_message")
@@ -182,6 +188,7 @@ public class ChatRoom extends AppCompatActivity {
 
             return null;
         }
+
         @Override
         protected void onPostExecute(String jsonString) {
             super.onPostExecute(jsonString);
@@ -191,71 +198,53 @@ public class ChatRoom extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
                 listview1 = (ListView) findViewById(R.id.listviiew1);
                 listview1.setAdapter(adapter);
-                if("OK".equals(status)){
-                    JSONArray chat_list = json.getJSONArray("data");
-                    total_pages = json.getString("total_pages");
-                    for (int i = 0; i < chat_list.length(); i++) {
-                        String next_day="";
-                        String sys_time = "";
-                        JSONObject Message = chat_list.getJSONObject(i);
-                        if(i+1<=chat_list.length()){
-                            JSONObject next = chat_list.getJSONObject(i+1);
-                            String next_timestamp = next.getString("timestamp");
-                            next_day = next_timestamp.split("-")[2].split(" ")[0];
-                        }
-                        String content = Message.getString("message");
-                        String timestamp = Message.getString("timestamp");
-                        String time = timestamp.split(" ")[1];
-                        String name = Message.getString("name");
-                        String data[] = timestamp.split("-");
-                        year = data[0];
-                        month = data[1];
-                        day = data[2].split(" ")[0];
+                if ("OK".equals(status)) {
+                    if (!json.isNull("data")) {
+                        JSONArray chat_list = json.getJSONArray("data");
+                        total_pages = json.getString("total_pages");
+                        for (int i = 0; i < chat_list.length(); i++) {
+                            String next_day = "";
+                            String sys_time = "";
+                            JSONObject Message = chat_list.getJSONObject(i);
+                            if (i + 1 <= chat_list.length()) {
+                                JSONObject next = chat_list.getJSONObject(i + 1);
+                                String next_timestamp = next.getString("timestamp");
+                                next_day = next_timestamp.split("-")[2].split(" ")[0];
+                            }
+                            String content = Message.getString("message");
+                            String timestamp = Message.getString("timestamp");
+                            String time = timestamp.split(" ")[1];
+                            String name = Message.getString("name");
+                            String data[] = timestamp.split("-");
+                            year = data[0];
+                            month = data[1];
+                            day = data[2].split(" ")[0];
 
-                        if(!next_day.equals(day)){
-                            sys_time = year + "-" + month + "-" + day;
+                            if (!next_day.equals(day)) {
+                                sys_time = year + "-" + month + "-" + day;
+                            }
+                            if ("Swaggy".equals(name)) {
+                                ChatMessage history = new ChatMessage(content, time, name, ChatMessage.Sent, sys_time);
+                                messageList.add(0, history);
+                            } else {
+                                ChatMessage history = new ChatMessage(content, time, name, ChatMessage.Receive, sys_time);
+                                messageList.add(0, history);
+                            }
                         }
-                        if("Swaggy".equals(name)){
-                            ChatMessage history = new ChatMessage(content,time,name,ChatMessage.Sent,sys_time);
-                            messageList.add(0,history);
-                        }
-                        else{
-                            ChatMessage history = new ChatMessage(content,time,name,ChatMessage.Receive,sys_time);
-                            messageList.add(0,history);
+                        if (position != 0) {
+                            listview1.setSelection(position);
                         }
                     }
-                    if(position != 0){
-                        listview1.setSelection(position);
+                    else{
+                        Toast.makeText(getBaseContext(),"发送成功",Toast.LENGTH_SHORT).show();
                     }
                 }
-
 
             } catch (JSONException e) {
                 e.printStackTrace();
             }
+
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
