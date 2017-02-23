@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -53,6 +54,7 @@ public class ChatRoom extends AppCompatActivity {
     private String year = "";
     private String month = "";
     private String day = "";
+    private String TAG = "test";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +73,10 @@ public class ChatRoom extends AppCompatActivity {
         listview1.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ChatMessage chatMessage_delete = messageList.get(position);
                 messageList.remove(position);
                 adapter.notifyDataSetChanged();
                 listview1.setAdapter(adapter);
+                Toast.makeText(getBaseContext(),"你隐藏了一条信息",Toast.LENGTH_SHORT).show();
 
             }
         });
@@ -106,9 +108,10 @@ public class ChatRoom extends AppCompatActivity {
 
             @Override
             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                Log.d(TAG, "onScroll: "+firstVisibleItem);
                 if (total != totalItemCount) {
+                    position = totalItemCount - total;
                     total = totalItemCount;
-                    position = totalItemCount - position;
                 }
                 if (firstVisibleItem == 0) {
                     View firstItem = listview1.getChildAt(0);
@@ -126,7 +129,15 @@ public class ChatRoom extends AppCompatActivity {
                 }
             }
         });
+
+        //listview 长按菜单
+        registerForContextMenu(listview1);
     }
+
+
+
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -147,7 +158,8 @@ public class ChatRoom extends AppCompatActivity {
         return true;
     }
     public void init_chatroom() {
-        String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d", chatroom_id, page);
+        page = 1;
+        String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d", chatroom_id,page);
         new BackgroundTask().execute(path);
     }
     class BackgroundTask extends AsyncTask<String, Integer, String> {
@@ -195,9 +207,7 @@ public class ChatRoom extends AppCompatActivity {
             try {
                 JSONObject json = new JSONObject(jsonString);
                 String status = json.getString("status");
-                adapter.notifyDataSetChanged();
-                listview1 = (ListView) findViewById(R.id.listviiew1);
-                listview1.setAdapter(adapter);
+
                 if ("OK".equals(status)) {
                     if (!json.isNull("data")) {
                         JSONArray chat_list = json.getJSONArray("data");
@@ -230,9 +240,10 @@ public class ChatRoom extends AppCompatActivity {
                                 ChatMessage history = new ChatMessage(content, time, name, ChatMessage.Receive, sys_time);
                                 messageList.add(0, history);
                             }
-                        }
-                        if (position != 0) {
-                            listview1.setSelection(position);
+                            if (position != 0) {
+                                listview1.setSelection(position);
+                                Log.d(TAG, "position" + position);
+                            }
                         }
                     }
                     else{
