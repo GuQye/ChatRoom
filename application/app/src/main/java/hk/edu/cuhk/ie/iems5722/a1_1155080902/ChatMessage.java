@@ -10,13 +10,15 @@ public class ChatMessage {
     private String message;
     private String time;
     private String name;
+    private String sys_time;
     private int type;
 
-    public ChatMessage(String message, String time, String name, int type){
+    public ChatMessage(String message, String time, String name, int type,String sys_time){
         this.message = message;
         this.time = time;
         this.type = type;
         this.name = name;
+        this.sys_time = sys_time;
     }
 
     public String getMessage(){
@@ -33,5 +35,9 @@ public class ChatMessage {
 
     public  int getType(){
         return type;
+    }
+
+    public String getSys_time(){
+        return sys_time;
     }
 }

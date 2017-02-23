@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -48,6 +49,9 @@ public class ChatRoom extends AppCompatActivity {
     private int position = 0;
     private int total;
     private String total_pages;
+    private String year = "";
+    private String month = "";
+    private String day = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,12 +74,13 @@ public class ChatRoom extends AppCompatActivity {
                 EditText editText = (EditText) findViewById(R.id.editText1);
                 String info = editText.getText().toString();
                 if(!"".equals(info)){
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:SS");
-                    String currentDateandTime = sdf.format(new Date());
-                    ChatMessage chatMessage = new ChatMessage(info,currentDateandTime,name,ChatMessage.Sent);
+                    //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:SS");
+                    //String currentDateandTime = sdf.format(new Date());
+                    SimpleDateFormat sdf_post = new SimpleDateFormat("HH:mm");
+                    String currentDateandTime_post = sdf_post.format(new Date());
+                    ChatMessage chatMessage = new ChatMessage(info,currentDateandTime_post,name,ChatMessage.Sent,"");
                     messageList.add(chatMessage);
                     adapter.notifyDataSetChanged();
-                    //post_message(info);
                     new BackgroundTask().execute("",info);
                     listview1.setSelection(messageList.size());
                     editText.setText("");
@@ -133,6 +138,11 @@ public class ChatRoom extends AppCompatActivity {
         String path = String.format("http://iems5722.albertauyeung.com/api/asgn2/get_messages?chatroom_id=%s&page=%d",chatroom_id,page);
         new BackgroundTask().execute(path);
     }
+
+
+
+
+
     class BackgroundTask extends AsyncTask<String,Integer,String> {
         @Override
         protected String doInBackground(String... params) {
@@ -164,7 +174,7 @@ public class ChatRoom extends AppCompatActivity {
                             .build();
                     Response response = client.newCall(request).execute();
                     String responseData = response.body().string();
-                    Log.d("sss", responseData);
+                    return responseData;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -172,8 +182,6 @@ public class ChatRoom extends AppCompatActivity {
 
             return null;
         }
-
-
         @Override
         protected void onPostExecute(String jsonString) {
             super.onPostExecute(jsonString);
@@ -187,17 +195,32 @@ public class ChatRoom extends AppCompatActivity {
                     JSONArray chat_list = json.getJSONArray("data");
                     total_pages = json.getString("total_pages");
                     for (int i = 0; i < chat_list.length(); i++) {
+                        String next_day="";
+                        String sys_time = "";
                         JSONObject Message = chat_list.getJSONObject(i);
+                        if(i+1<=chat_list.length()){
+                            JSONObject next = chat_list.getJSONObject(i+1);
+                            String next_timestamp = next.getString("timestamp");
+                            next_day = next_timestamp.split("-")[2].split(" ")[0];
+                        }
                         String content = Message.getString("message");
                         String timestamp = Message.getString("timestamp");
+                        String time = timestamp.split(" ")[1];
                         String name = Message.getString("name");
+                        String data[] = timestamp.split("-");
+                        year = data[0];
+                        month = data[1];
+                        day = data[2].split(" ")[0];
 
+                        if(!next_day.equals(day)){
+                            sys_time = year + "-" + month + "-" + day;
+                        }
                         if("Swaggy".equals(name)){
-                            ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Sent);
+                            ChatMessage history = new ChatMessage(content,time,name,ChatMessage.Sent,sys_time);
                             messageList.add(0,history);
                         }
                         else{
-                            ChatMessage history = new ChatMessage(content,timestamp,name,ChatMessage.Receive);
+                            ChatMessage history = new ChatMessage(content,time,name,ChatMessage.Receive,sys_time);
                             messageList.add(0,history);
                         }
                     }

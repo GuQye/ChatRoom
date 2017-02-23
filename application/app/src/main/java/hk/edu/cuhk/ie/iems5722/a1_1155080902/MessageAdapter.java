@@ -44,6 +44,7 @@ public class MessageAdapter extends ArrayAdapter<ChatMessage> {
             viewHolder.time_right = (TextView) view.findViewById(R.id.listview_time_right);
             viewHolder.name_left = (TextView) view.findViewById(R.id.name_left);
             viewHolder.name_right = (TextView) view.findViewById(R.id.name_right);
+            viewHolder.sys_time = (TextView) view.findViewById(R.id.sys_time);
             view.setTag(viewHolder);
         }
         else{
@@ -51,7 +52,9 @@ public class MessageAdapter extends ArrayAdapter<ChatMessage> {
             viewHolder = (ViewHolder) view.getTag();
         }
 
-
+        if(!"".equals(chatmess.getSys_time())){
+            viewHolder.sys_time.setText(chatmess.getSys_time());
+        }
 
         if(chatmess.getType()==ChatMessage.Receive){
             viewHolder.layout_left.setVisibility(View.VISIBLE);
@@ -78,6 +81,7 @@ public class MessageAdapter extends ArrayAdapter<ChatMessage> {
         TextView time_right;
         TextView name_left;
         TextView name_right;
+        TextView sys_time;
     }
 
 }

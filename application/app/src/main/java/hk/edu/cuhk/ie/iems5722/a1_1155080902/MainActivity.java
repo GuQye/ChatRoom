@@ -1,6 +1,7 @@
 package hk.edu.cuhk.ie.iems5722.a1_1155080902;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -52,53 +53,50 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
     public void init_chatroom() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String path = "http://iems5722.albertauyeung.com/api/asgn2/get_chatrooms";
-                    OkHttpClient client = new OkHttpClient();
-                    Request request = new Request.Builder().url(path).build();
-                    Response response = client.newCall(request).execute();
-                    String responseData = response.body().string();
-                    parseJson(responseData);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        String path = "http://iems5722.albertauyeung.com/api/asgn2/get_chatrooms";
+        new BackgroundTask().execute(path);
     }
-
-    public void parseJson(final String jsonString){
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                chatroom.notifyDataSetChanged();
-                main_listview.setAdapter(chatroom);
-                try {
-                    JSONObject json = new JSONObject(jsonString);
-                    String status = json.getString("status");
-                    if("OK".equals(status)){
-                        JSONArray chat_list = json.getJSONArray("data");
-                        for (int i = 0; i < chat_list.length(); i++) {
-                            JSONObject room = chat_list.getJSONObject(i);
-                            String name =room.getString("name");
-                            int id     = room.getInt("id");
-                            Room room1 = new Room(id,name);
-                            chatroom_list.add(room1);
-                        }
+    class BackgroundTask extends AsyncTask<String,Integer,String> {
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                String path = String.format(params[0]);
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder().url(path).build();
+                Response response = null;
+                response = client.newCall(request).execute();
+                String responseData = response.body().string();
+                return responseData;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(String jsonString) {
+            super.onPostExecute(jsonString);
+            chatroom.notifyDataSetChanged();
+            main_listview.setAdapter(chatroom);
+            try {
+                JSONObject json = new JSONObject(jsonString);
+                String status = json.getString("status");
+                if("OK".equals(status)){
+                    JSONArray chat_list = json.getJSONArray("data");
+                    for (int i = 0; i < chat_list.length(); i++) {
+                        JSONObject room = chat_list.getJSONObject(i);
+                        String name =room.getString("name");
+                        int id     = room.getInt("id");
+                        Room room1 = new Room(id,name);
+                        chatroom_list.add(room1);
                     }
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
                 }
+
+
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        });
-
-
+        }
     }
+
 }
