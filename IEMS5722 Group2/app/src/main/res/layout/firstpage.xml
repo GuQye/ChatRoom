@@ -1,0 +1,35 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <ImageView android:src="@drawable/background"
+            android:layout_width="wrap_content"
+            android:layout_height="360dp"
+            android:layout_marginTop="30dp"
+            android:layout_gravity="center_horizontal" />
+
+
+
+        <ImageButton android:src="@drawable/startgame"
+            android:layout_width="120dp"
+            android:id="@+id/startgame"
+            android:layout_height="50dp"
+            android:scaleType="fitXY"
+            android:layout_marginTop="30dp"
+            android:background="#FFFFFF"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
+
+</RelativeLayout>
